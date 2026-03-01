@@ -25,13 +25,14 @@ export function NavBar() {
         </Link>
 
         <nav className="flex items-center gap-4">
-          <Link href="/app" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+          {/* Desktop nav links — hidden on mobile */}
+          <Link href="/app" className="hidden sm:block text-sm text-gray-600 hover:text-gray-900 transition-colors">
             Dashboard
           </Link>
-          <Link href="/app/goals/new" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+          <Link href="/app/goals/new" className="hidden sm:block text-sm text-gray-600 hover:text-gray-900 transition-colors">
             New Goal
           </Link>
-          <Link href="/app/squads" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+          <Link href="/app/squads" className="hidden sm:block text-sm text-gray-600 hover:text-gray-900 transition-colors">
             Squads
           </Link>
 
@@ -53,6 +54,17 @@ export function NavBar() {
                   <p className="text-xs text-gray-500 truncate">{user.email}</p>
                 </div>
                 <DropdownMenuSeparator />
+                {/* Mobile nav links — shown only in dropdown on small screens */}
+                <DropdownMenuItem asChild className="sm:hidden cursor-pointer">
+                  <Link href="/app">Dashboard</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="sm:hidden cursor-pointer">
+                  <Link href="/app/goals/new">New Goal</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="sm:hidden cursor-pointer">
+                  <Link href="/app/squads">Squads</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="sm:hidden" />
                 <DropdownMenuItem onClick={signOut} className="cursor-pointer text-red-600">
                   Sign out
                 </DropdownMenuItem>

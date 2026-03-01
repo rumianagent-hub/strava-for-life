@@ -25,7 +25,7 @@ export default function LandingPage() {
           Build streaks. Stay accountable.
         </div>
 
-        <h1 className="text-5xl font-bold text-gray-900 mb-4 leading-tight">
+        <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4 leading-tight">
           Strava for Life
         </h1>
         <p className="text-xl text-gray-500 max-w-xl mx-auto mb-10">
