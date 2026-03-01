@@ -1,36 +1,143 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Strava for Life
 
-## Getting Started
+Track your daily habits, build streaks, and stay accountable with your squad.
 
-First, run the development server:
+**Live app:** https://strava-for-life.vercel.app
+
+## Features
+
+- **Google Sign-In** — one-click auth
+- **Goals** — create goals with category, description, and privacy (public / squad-only)
+- **Daily check-ins** — mark done + add a note each day
+- **Streak tracking** — current streak and personal best
+- **14-day grid** — visual check-in history
+- **Squads** — create a squad, share the invite link, track everyone's goals together
+- **Weekly summary email** — disabled by default; enable by setting `RESEND_API_KEY`
+
+## Tech stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Next.js 16 (App Router) + TypeScript |
+| Styling | Tailwind CSS v4 + shadcn/ui |
+| Auth | Firebase Authentication (Google) |
+| Database | Cloud Firestore |
+| Functions | Firebase Cloud Functions v2 (Gen 2) |
+| Hosting | Vercel |
+| Email | Resend (optional) |
+
+## Local development
+
+### Prerequisites
+
+- Node.js ≥ 18
+- A Firebase project (Blaze plan required for Cloud Functions)
+
+### 1. Clone and install
+
+```bash
+git clone https://github.com/rumianagent-hub/strava-for-life.git
+cd strava-for-life
+npm install
+```
+
+### 2. Configure environment variables
+
+Create a `.env.local` file in the root with your Firebase config:
+
+```
+NEXT_PUBLIC_FIREBASE_API_KEY=...
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
+NEXT_PUBLIC_FIREBASE_APP_ID=...
+```
+
+Get these values from **Firebase Console → Project Settings → Your apps → Web app → SDK setup and configuration**.
+
+### 3. Run the dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Firebase setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Firestore rules and indexes
 
-## Learn More
+```bash
+firebase deploy --only firestore --project <your-project-id>
+```
 
-To learn more about Next.js, take a look at the following resources:
+### Cloud Functions
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+cd functions && npm install && cd ..
+firebase deploy --only functions --project <your-project-id>
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Weekly summary email (optional)
 
-## Deploy on Vercel
+The `weeklySummaryEmail` Cloud Function runs every Sunday at 8 AM UTC. It is **disabled by default** — it checks for a `RESEND_API_KEY` environment variable and exits silently if it is not set.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+To enable:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Create a free account at [resend.com](https://resend.com) and get an API key.
+2. Set the secret on your Firebase project:
+
+```bash
+firebase functions:secrets:set RESEND_API_KEY --project <your-project-id>
+```
+
+3. Redeploy functions:
+
+```bash
+firebase deploy --only functions --project <your-project-id>
+```
+
+4. In the app, set `weeklyEmailEnabled: true` on your Firestore user document.
+
+## Project structure
+
+```
+src/
+├── app/
+│   ├── page.tsx                    # Landing page
+│   ├── app/
+│   │   ├── page.tsx                # Dashboard
+│   │   ├── goals/
+│   │   │   ├── new/page.tsx        # Create goal
+│   │   │   └── [goalId]/page.tsx   # Goal detail
+│   │   └── squads/
+│   │       ├── page.tsx            # Squad list
+│   │       └── [squadId]/page.tsx  # Squad detail
+│   └── join/[inviteCode]/page.tsx  # Join squad via invite link
+├── components/
+│   ├── pages/                      # Client-side page components
+│   ├── NavBar.tsx
+│   ├── GoalCard.tsx
+│   ├── CheckinGrid.tsx
+│   └── Providers.tsx
+├── contexts/
+│   └── AuthContext.tsx
+└── lib/
+    ├── firebase.ts
+    ├── firestore.ts
+    ├── types.ts
+    └── dates.ts
+functions/
+└── src/index.ts                    # weeklySummaryEmail Cloud Function
+```
+
+## Deployment
+
+The app is deployed to **Vercel** (automatic deploys on push to `main`).
+
+Firestore rules, indexes, and Cloud Functions are deployed via the Firebase CLI.
+
+## License
+
+MIT
