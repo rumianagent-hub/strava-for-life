@@ -215,33 +215,39 @@ export default function GoalDetailClient() {
               Today&apos;s Check-in
             </h2>
 
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setTodayDone(!todayDone)}
-                  className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl transition-all ${
-                    todayDone
-                      ? "bg-green-500 text-white scale-105"
-                      : "bg-gray-100 text-gray-400 hover:bg-gray-200"
-                  }`}
-                >
+            <div className="space-y-3">
+              {/* Big tappable done toggle */}
+              <button
+                type="button"
+                onClick={() => setTodayDone(!todayDone)}
+                className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
+                  todayDone
+                    ? "bg-green-50 border-green-400"
+                    : "bg-gray-50 border-dashed border-gray-200 hover:border-gray-400 hover:bg-gray-100"
+                }`}
+              >
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg flex-shrink-0 transition-all ${
+                  todayDone
+                    ? "bg-green-500 text-white"
+                    : "bg-white border-2 border-gray-300 text-gray-300"
+                }`}>
                   {todayDone ? "✓" : "○"}
-                </button>
-                <div>
-                  <p className="font-medium text-gray-900">
-                    {todayDone ? "Done!" : "Mark as done"}
+                </div>
+                <div className="text-left">
+                  <p className={`font-semibold ${todayDone ? "text-green-700" : "text-gray-700"}`}>
+                    {todayDone ? "Done today! 🔥" : "Mark today as done"}
                   </p>
-                  <p className="text-xs text-gray-500">
-                    {today} · {checkins[today]?.done ? `Streak: ${goal.currentStreak} days 🔥` : "Not checked in yet"}
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {checkins[today]?.done ? `Streak: ${goal.currentStreak} days` : "Tap to check in"}
                   </p>
                 </div>
-              </div>
+              </button>
 
               <Textarea
                 placeholder="Add a note (optional)..."
                 value={todayNote}
                 onChange={(e) => setTodayNote(e.target.value)}
-                rows={3}
+                rows={2}
                 className="resize-none rounded-xl"
               />
 
