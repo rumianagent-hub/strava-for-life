@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getUserGoals, getCheckin } from "@/lib/firestore";
+import { getUserGoals, getCheckin, getUserSquads, getSquadGoals } from "@/lib/firestore";
 import { Goal } from "@/lib/types";
 import { GoalCard } from "@/components/GoalCard";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,21 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!user) return;
     const fetchGoals = async () => {
-      const g = await getUserGoals(user.uid);
+      const [ownGoals, squads] = await Promise.all([
+        getUserGoals(user.uid),
+        getUserSquads(user.uid),
+      ]);
+
+      const squadGoalArrays = await Promise.all(
+        squads.map((squad) => getSquadGoals(squad.id))
+      );
+
+      // Merge own goals + squad goals from other members (dedupe by id)
+      const allGoalMap = new Map<string, Goal>();
+      ownGoals.forEach((goal) => allGoalMap.set(goal.id, goal));
+      squadGoalArrays.flat().forEach((goal) => allGoalMap.set(goal.id, goal));
+      const g = Array.from(allGoalMap.values());
+
       setGoals(g);
 
       // Check today's checkin status for each goal
@@ -65,7 +79,7 @@ export default function DashboardPage() {
         <Link href="/app/goals/new">
           <Button className="gap-2 rounded-xl">
             <Plus className="w-4 h-4" />
-            New Goal
+            <span className="hidden sm:inline">New Goal</span>
           </Button>
         </Link>
       </div>
