@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { createGoal } from "@/lib/firestore";
-import { GoalCategory, GoalPrivacy } from "@/lib/types";
+import { createGoal, getUserSquads } from "@/lib/firestore";
+import { GoalCategory, GoalPrivacy, Squad } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,10 +33,21 @@ export default function NewGoalPage() {
   const [category, setCategory] = useState<GoalCategory>("health");
   const [privacy, setPrivacy] = useState<GoalPrivacy>("private");
   const [saving, setSaving] = useState(false);
+  const [squads, setSquads] = useState<Squad[]>([]);
+  const [selectedSquadId, setSelectedSquadId] = useState("");
+
+  useEffect(() => {
+    if (!user) return;
+    getUserSquads(user.uid).then(setSquads);
+  }, [user]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!user || !title.trim()) return;
+    if (privacy === "squad" && !selectedSquadId) {
+      toast.error("Please select a squad for this goal");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -45,6 +56,7 @@ export default function NewGoalPage() {
         description: description.trim(),
         category,
         privacy,
+        squadId: privacy === "squad" ? selectedSquadId : undefined,
       });
       toast.success("Goal created!");
       router.push(`/app/goals/${goalId}`);
@@ -150,10 +162,39 @@ export default function NewGoalPage() {
               </div>
             </div>
 
+            {privacy === "squad" && (
+              <div className="space-y-2">
+                <Label>Link to Squad *</Label>
+                {squads.length === 0 ? (
+                  <p className="text-sm text-gray-500">
+                    You need to{" "}
+                    <Link href="/app/squads" className="underline text-gray-700">
+                      create or join a squad
+                    </Link>{" "}
+                    first.
+                  </p>
+                ) : (
+                  <select
+                    value={selectedSquadId}
+                    onChange={(e) => setSelectedSquadId(e.target.value)}
+                    required
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  >
+                    <option value="">Select a squad…</option>
+                    {squads.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
+
             <Button
               type="submit"
               className="w-full rounded-xl"
-              disabled={saving || !title.trim()}
+              disabled={saving || !title.trim() || (privacy === "squad" && !selectedSquadId)}
             >
               {saving ? "Creating..." : "Create Goal"}
             </Button>

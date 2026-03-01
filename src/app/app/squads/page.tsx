@@ -7,12 +7,12 @@ import { Squad } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, Plus, Link as LinkIcon } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export default function SquadsPage() {
   const { user } = useAuth();
@@ -111,6 +111,7 @@ export default function SquadsPage() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Join a Squad</DialogTitle>
+                <DialogDescription>Enter an invite code to join a squad.</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleJoinSquad} className="space-y-4 pt-2">
                 <div className="space-y-2">
@@ -140,6 +141,7 @@ export default function SquadsPage() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Create a Squad</DialogTitle>
+                <DialogDescription>Give your squad a name. You can invite others after creating it.</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleCreateSquad} className="space-y-4 pt-2">
                 <div className="space-y-2">

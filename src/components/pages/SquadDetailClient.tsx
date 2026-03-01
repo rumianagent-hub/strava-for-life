@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { getSquad, getSquadGoals, getCheckin, getUserSquads } from "@/lib/firestore";
-import { Squad, Goal } from "@/lib/types";
+import { getSquad, getSquadGoals, getCheckin, getUserSquads, getUsers } from "@/lib/firestore";
+import { Squad, Goal, UserDoc } from "@/lib/types";
 import { GoalCard } from "@/components/GoalCard";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ export default function SquadDetailClient() {
   const [squad, setSquad] = useState<Squad | null>(null);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [checkedInToday, setCheckedInToday] = useState<Record<string, boolean>>({});
+  const [memberProfiles, setMemberProfiles] = useState<Record<string, UserDoc>>({});
   const [loading, setLoading] = useState(true);
   const [isMember, setIsMember] = useState(false);
 
@@ -34,6 +35,9 @@ export default function SquadDetailClient() {
     setIsMember(userSquads.some((sq) => sq.id === squadId));
 
     if (s) {
+      const profiles = await getUsers(s.memberUids);
+      setMemberProfiles(profiles);
+
       const g = await getSquadGoals(squadId);
       setGoals(g);
 
@@ -137,7 +141,12 @@ export default function SquadDetailClient() {
               <div key={uid} className="flex flex-col items-center gap-1">
                 <Avatar className="w-10 h-10">
                   <AvatarFallback className="bg-gray-100 text-gray-600 text-sm">
-                    {uid.slice(0, 2).toUpperCase()}
+                    {(memberProfiles[uid]?.displayName || "?")
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 {uid === user?.uid && (

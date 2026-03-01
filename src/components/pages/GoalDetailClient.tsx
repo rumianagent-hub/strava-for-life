@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { todayStr, last14Days, formatDisplayDate } from "@/lib/dates";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -155,7 +156,9 @@ export default function GoalDetailClient() {
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
-                  <Button variant="outline">Cancel</Button>
+                  <DialogClose asChild>
+                    <Button variant="outline">Cancel</Button>
+                  </DialogClose>
                   <Button
                     variant="destructive"
                     onClick={handleArchive}
@@ -229,7 +232,7 @@ export default function GoalDetailClient() {
                     {todayDone ? "Done!" : "Mark as done"}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {today} · {todayDone ? `Streak: ${goal.currentStreak} days 🔥` : "Not checked in yet"}
+                    {today} · {checkins[today]?.done ? `Streak: ${goal.currentStreak} days 🔥` : "Not checked in yet"}
                   </p>
                 </div>
               </div>

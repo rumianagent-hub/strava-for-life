@@ -41,6 +41,15 @@ export async function getUser(uid: string): Promise<UserDoc | null> {
   return snap.exists() ? (snap.data() as UserDoc) : null;
 }
 
+export async function getUsers(uids: string[]): Promise<Record<string, UserDoc>> {
+  const snaps = await Promise.all(uids.map((uid) => getDoc(doc(db, "users", uid))));
+  const result: Record<string, UserDoc> = {};
+  snaps.forEach((snap) => {
+    if (snap.exists()) result[snap.id] = snap.data() as UserDoc;
+  });
+  return result;
+}
+
 // ─── Goals ────────────────────────────────────────────────────────────────────
 
 export async function createGoal(
