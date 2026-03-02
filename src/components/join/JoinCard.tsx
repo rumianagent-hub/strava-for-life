@@ -1,64 +1,39 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { getSquadByInviteCode, joinSquad } from "@/lib/firestore";
-import { Squad } from "@/lib/types";
+import { useSquadByInviteCode, useJoinSquad } from "@/lib/hooks/use-squads";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, Flame } from "lucide-react";
 import Link from "next/link";
-import { toast } from "sonner";
+import { Spinner } from "@/components/feedback/Spinner";
 
-export default function JoinClient() {
-  const { inviteCode } = useParams<{ inviteCode: string }>();
+interface JoinCardProps {
+  inviteCode: string;
+}
+
+export function JoinCard({ inviteCode }: JoinCardProps) {
   const { user, loading: authLoading, signInWithGoogle } = useAuth();
   const router = useRouter();
-  const [squad, setSquad] = useState<Squad | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [joining, setJoining] = useState(false);
-  const [notFound, setNotFound] = useState(false);
-
-  useEffect(() => {
-    if (!inviteCode) return;
-    getSquadByInviteCode(inviteCode).then((s) => {
-      if (!s) setNotFound(true);
-      setSquad(s);
-      setLoading(false);
-    });
-  }, [inviteCode]);
+  const { data: squad, isLoading } = useSquadByInviteCode(inviteCode);
+  const joinSquad = useJoinSquad();
 
   async function handleJoin() {
     if (!user || !squad) return;
-    setJoining(true);
-    try {
-      const result = await joinSquad(squad.id, user.uid);
-      if (!result.success) {
-        toast.error(result.error || "Failed to join");
-        return;
-      }
-      toast.success(`Welcome to ${squad.name}!`);
-      router.push(`/app/squads/${squad.id}`);
-    } catch {
-      toast.error("Failed to join squad");
-    } finally {
-      setJoining(false);
-    }
-  }
-
-  if (authLoading || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin w-6 h-6 border-2 border-gray-200 border-t-gray-800 rounded-full" />
-      </div>
+    joinSquad.mutate(
+      { squadId: squad.id, uid: user.uid },
+      { onSuccess: () => router.push(`/app/squads/${squad.id}`) },
     );
   }
+
+  if (authLoading || isLoading) return <Spinner variant="fullscreen" />;
+
+  const notFound = !isLoading && !squad;
 
   return (
     <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 font-semibold text-gray-900">
             <Flame className="w-5 h-5 text-orange-500" />
@@ -115,10 +90,10 @@ export default function JoinClient() {
               ) : (
                 <Button
                   onClick={handleJoin}
-                  disabled={joining}
+                  disabled={joinSquad.isPending}
                   className="w-full rounded-xl"
                 >
-                  {joining ? "Joining..." : `Join ${squad.name}`}
+                  {joinSquad.isPending ? "Joining..." : `Join ${squad.name}`}
                 </Button>
               )}
             </CardContent>

@@ -1,104 +1,66 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getUserGoals, getCheckin, getUserSquads, getSquadGoals } from "@/lib/firestore";
-import { Goal } from "@/lib/types";
+import { useUserGoals } from "@/lib/hooks/use-goals";
+import { useUserSquads } from "@/lib/hooks/use-squads";
+import { useTodayCheckinStatus } from "@/lib/hooks/use-checkins";
+import { todayStr } from "@/lib/dates";
+import { getTimeOfDay } from "@/lib/utils";
 import { GoalCard } from "@/components/GoalCard";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { EmptyState } from "@/components/feedback/EmptyState";
+import { Spinner } from "@/components/feedback/Spinner";
 import { Button } from "@/components/ui/button";
 import { Plus, Flame } from "lucide-react";
 import Link from "next/link";
-import { todayStr } from "@/lib/dates";
+import { useMemo } from "react";
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [checkedInToday, setCheckedInToday] = useState<Record<string, boolean>>({});
-  const [loading, setLoading] = useState(true);
+  const today = todayStr();
 
-  useEffect(() => {
-    if (!user) return;
-    const fetchGoals = async () => {
-      const [ownGoals, squads] = await Promise.all([
-        getUserGoals(user.uid),
-        getUserSquads(user.uid),
-      ]);
+  const { data: ownGoals = [], isLoading: goalsLoading } = useUserGoals(user?.uid);
+  const { isLoading: squadsLoading } = useUserSquads(user?.uid);
 
-      const squadGoalArrays = await Promise.all(
-        squads.map((squad) => getSquadGoals(squad.id))
-      );
+  const allGoals = useMemo(() => ownGoals, [ownGoals]);
 
-      // Merge own goals + squad goals from other members (dedupe by id)
-      const allGoalMap = new Map<string, Goal>();
-      ownGoals.forEach((goal) => allGoalMap.set(goal.id, goal));
-      squadGoalArrays.flat().forEach((goal) => allGoalMap.set(goal.id, goal));
-      const g = Array.from(allGoalMap.values());
+  const { data: checkedInToday = {} } = useTodayCheckinStatus(
+    allGoals.map((g) => g.id),
+    today,
+  );
 
-      setGoals(g);
+  const loading = goalsLoading || squadsLoading;
+  if (loading) return <Spinner />;
 
-      // Check today's checkin status for each goal
-      const today = todayStr();
-      const statusMap: Record<string, boolean> = {};
-      await Promise.all(
-        g.map(async (goal) => {
-          const checkin = await getCheckin(goal.id, today);
-          statusMap[goal.id] = checkin?.done ?? false;
-        })
-      );
-      setCheckedInToday(statusMap);
-      setLoading(false);
-    };
-    fetchGoals();
-  }, [user]);
-
-  const pendingToday = goals.filter((g) => !checkedInToday[g.id]);
-  const doneToday = goals.filter((g) => checkedInToday[g.id]);
-
-  if (loading) {
-    return (
-      <div className="flex justify-center py-20">
-        <div className="animate-spin w-6 h-6 border-2 border-gray-200 border-t-gray-800 rounded-full" />
-      </div>
-    );
-  }
+  const pendingToday = allGoals.filter((g) => !checkedInToday[g.id]);
+  const doneToday = allGoals.filter((g) => checkedInToday[g.id]);
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Good {getTimeOfDay()}, {user?.displayName?.split(" ")[0]} 👋
-          </h1>
-          <p className="text-gray-500 mt-1">
-            {pendingToday.length === 0
-              ? "All caught up for today!"
-              : `${pendingToday.length} goal${pendingToday.length > 1 ? "s" : ""} waiting for today's check-in`}
-          </p>
-        </div>
-        <Link href="/app/goals/new">
-          <Button className="gap-2 rounded-xl">
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">New Goal</span>
-          </Button>
-        </Link>
-      </div>
-
-      {goals.length === 0 ? (
-        <div className="text-center py-24 bg-white rounded-2xl border border-gray-100">
-          <div className="w-16 h-16 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Flame className="w-8 h-8 text-orange-400" />
-          </div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">
-            No goals yet
-          </h2>
-          <p className="text-gray-500 text-sm mb-6">
-            Start your journey by creating your first goal.
-          </p>
+      <PageHeader
+        title={`Good ${getTimeOfDay()}, ${user?.displayName?.split(" ")[0]} \u{1F44B}`}
+        subtitle={
+          pendingToday.length === 0
+            ? "All caught up for today!"
+            : `${pendingToday.length} goal${pendingToday.length > 1 ? "s" : ""} waiting for today's check-in`
+        }
+        actions={
           <Link href="/app/goals/new">
-            <Button className="rounded-xl">Create your first goal</Button>
+            <Button className="gap-2 rounded-xl">
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">New Goal</span>
+            </Button>
           </Link>
-        </div>
+        }
+      />
+
+      {allGoals.length === 0 ? (
+        <EmptyState
+          icon={Flame}
+          title="No goals yet"
+          description="Start your journey by creating your first goal."
+          action={{ href: "/app/goals/new", label: "Create your first goal" }}
+        />
       ) : (
         <>
           {pendingToday.length > 0 && (
@@ -117,7 +79,7 @@ export default function DashboardPage() {
           {doneToday.length > 0 && (
             <section>
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                Done Today ✓
+                Done Today {"\u2713"}
               </h2>
               <div className="grid sm:grid-cols-2 gap-3">
                 {doneToday.map((goal) => (
@@ -130,11 +92,4 @@ export default function DashboardPage() {
       )}
     </div>
   );
-}
-
-function getTimeOfDay(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return "morning";
-  if (hour < 17) return "afternoon";
-  return "evening";
 }

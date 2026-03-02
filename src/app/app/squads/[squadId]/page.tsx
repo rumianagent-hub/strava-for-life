@@ -1,5 +1,9 @@
-import SquadDetailClient from "@/components/pages/SquadDetailClient";
+"use client";
+
+import { useParams } from "next/navigation";
+import { SquadDetailView } from "@/components/squads/SquadDetailView";
 
 export default function SquadDetailPage() {
-  return <SquadDetailClient />;
+  const { squadId } = useParams<{ squadId: string }>();
+  return <SquadDetailView squadId={squadId} />;
 }

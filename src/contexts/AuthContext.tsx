@@ -8,11 +8,12 @@ import {
   User,
 } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
-import { upsertUser } from "@/lib/firestore";
+import { userRepository } from "@/lib/repositories/user.repository";
 
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
+  error: string | null;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -20,6 +21,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue>({
   user: null,
   loading: true,
+  error: null,
   signInWithGoogle: async () => {},
   signOut: async () => {},
 });
@@ -27,16 +29,22 @@ const AuthContext = createContext<AuthContextValue>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       if (u) {
-        await upsertUser(u.uid, {
-          displayName: u.displayName || "",
-          photoURL: u.photoURL || "",
-          email: u.email || "",
-        });
+        try {
+          await userRepository.upsert(u.uid, {
+            displayName: u.displayName || "",
+            photoURL: u.photoURL || "",
+            email: u.email || "",
+          });
+        } catch (e) {
+          console.error("Failed to upsert user:", e);
+          setError("Failed to sync user profile");
+        }
       }
       setLoading(false);
     });
@@ -44,15 +52,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   async function signInWithGoogle() {
-    await signInWithPopup(auth, googleProvider);
+    try {
+      setError(null);
+      await signInWithPopup(auth, googleProvider);
+    } catch (e) {
+      console.error("Sign-in failed:", e);
+      setError("Sign-in failed. Please try again.");
+    }
   }
 
   async function signOut() {
-    await firebaseSignOut(auth);
+    try {
+      await firebaseSignOut(auth);
+    } catch (e) {
+      console.error("Sign-out failed:", e);
+    }
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ user, loading, error, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   );

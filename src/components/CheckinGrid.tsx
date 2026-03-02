@@ -1,6 +1,6 @@
 "use client";
 
-import { Checkin } from "@/lib/types";
+import type { Checkin } from "@/lib/schemas";
 import { formatDayLabel, todayStr } from "@/lib/dates";
 
 interface CheckinGridProps {
@@ -32,7 +32,7 @@ export function CheckinGrid({ dates, checkins }: CheckinGridProps) {
               }`}
               title={date}
             >
-              {done ? "✓" : isToday ? "○" : "·"}
+              {done ? "\u2713" : isToday ? "\u25CB" : "\u00B7"}
             </div>
             <span className="text-xs text-gray-400">{formatDayLabel(date)}</span>
           </div>
